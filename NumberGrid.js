@@ -12,7 +12,8 @@ export default function NumberGrid() {
     let dispatch = useDispatch()
     let solved = useSelector(state => state.unsolved) === 0
     let difficulty = useSelector(state => state.difficulty)
-    let difficultyMap = ['very easy', 'easy', 'medium', 'hard', 'extrem']
+    let difficultyMap = useSelector(state => state.difficultyMap)
+    // let difficultyMap = ['very easy', 'easy', 'medium', 'hard', 'extrem']
     let grid = [React.createElement(View, { key: -1 })]
     for (let i = 0; i < 9; i++) {
         grid.push(<Number key={i} numberId={i + 1} />)

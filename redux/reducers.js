@@ -1,4 +1,6 @@
 import puzzles from '../puzzles/diff.json'
+import {storeProgress} from '../progress.js'
+
 let cells = []
 for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
@@ -32,6 +34,10 @@ const initialState = {
     unsolved: 0,
     undeletable: false,
     difficulty: 0,
+    difficultyMap: ['very easy', 'easy', 'medium', 'hard', 'extrem'],
+    time: 0,
+    continueTime: false,
+
 }
 
 export default function rootReducer(state = initialState, action) {
@@ -84,7 +90,7 @@ export default function rootReducer(state = initialState, action) {
             let cellCopy = [...state.cells]
             let unsolved = 0
             // let puzzles = fetch('../puzzles/diff.json')
-            let sortedPuzzles = puzzles.filter(puzzle => puzzle.difficulty > state.difficulty && puzzle.difficulty < (state.difficulty + 1)  * (8.5/6) )
+            let sortedPuzzles = puzzles.filter(puzzle => puzzle.difficulty > state.difficulty && puzzle.difficulty < (state.difficulty + 1) * (8.5 / 6))
             let puzzle = sortedPuzzles[Math.floor(Math.random() * (sortedPuzzles.length - 1))]
 
             for (let c of puzzle.puzzle) {
@@ -114,13 +120,18 @@ export default function rootReducer(state = initialState, action) {
                 ...state,
                 cells: cellCopy,
                 unsolved: unsolved,
+                continueTime: true
             }
         }
         case 'cell/revealSolution': {
             if (state.cells[state.focused.id].mutable) {
                 let cellCopy = [...state.cells]
                 let solution = cellCopy[state.focused.id].solution
+                let unsolved = state.unsolved
+                unsolved--
+
                 cellCopy[state.focused.id].value = solution
+                cellCopy[state.focused.id].mutable = false
                 let focusedCopy = { ...state.focused }
                 focusedCopy.value = solution
 
@@ -150,6 +161,7 @@ export default function rootReducer(state = initialState, action) {
                     ...state,
                     cells: cellCopy,
                     focused: focusedCopy,
+                    unsolved: unsolved
                 }
             } else {
                 return state
@@ -216,28 +228,28 @@ export default function rootReducer(state = initialState, action) {
             }
         }
         case 'focus/reloadFocus': {
-                let cellCopy = [...state.cells]
-                if (state.focused.id !== -1) {
-                    cellCopy[state.focused.id].focused = false
-                }
-                cellCopy[state.focused.id].focused = true
-                cellCopy = cellCopy.map(cell => {
-                    if (cell.value == state.focused.value || cell.notes[state.focused.value - 1] == true) {
-                        return {
-                            ...cell,
-                            highlight: state.focused.value
-                        }
-                    } else {
-                        return {
-                            ...cell,
-                            highlight: 0
-                        }
+            let cellCopy = [...state.cells]
+            if (state.focused.id !== -1) {
+                cellCopy[state.focused.id].focused = false
+            }
+            cellCopy[state.focused.id].focused = true
+            cellCopy = cellCopy.map(cell => {
+                if (cell.value == state.focused.value || cell.notes[state.focused.value - 1] == true) {
+                    return {
+                        ...cell,
+                        highlight: state.focused.value
                     }
-                })
-                return {
-                    ...state,
-                    cells: cellCopy,
+                } else {
+                    return {
+                        ...cell,
+                        highlight: 0
+                    }
                 }
+            })
+            return {
+                ...state,
+                cells: cellCopy,
+            }
         }
         case 'number/numberEmitet': {
             let cellCopy = [...state.cells]
@@ -283,7 +295,7 @@ export default function rootReducer(state = initialState, action) {
                                 cellCopy[i].notes[action.payload - 1] = false
                             }
                         }
-                        for (let i = state.focused.seat; i < 81 - 8 + state.focused.seat ; i += 9) {
+                        for (let i = state.focused.seat; i < 81 - 8 + state.focused.seat; i += 9) {
                             if (cellCopy[i].notes[action.payload - 1]) {
                                 cellCopy[i].notes[action.payload - 1] = false
                             }
@@ -291,12 +303,12 @@ export default function rootReducer(state = initialState, action) {
                         let adjustedSeat = state.focused.seat - state.focused.seat % 3
                         let adjustedColumn = state.focused.column - state.focused.column % 3
                         for (let i = adjustedSeat; i < adjustedSeat + 3; i++) {
-                            for (let j = adjustedColumn; j < adjustedColumn + 3; j++){
+                            for (let j = adjustedColumn; j < adjustedColumn + 3; j++) {
                                 if (cellCopy[i + j * 9].notes[action.payload - 1]) {
                                     cellCopy[i + j * 9].notes[action.payload - 1] = false
                                 }
                             }
-                            
+
                         }
                         unsolved--
                         undeletable = true
@@ -324,7 +336,7 @@ export default function rootReducer(state = initialState, action) {
         }
         case 'difficulty/increment': {
             let difficulty = state.difficulty
-            if (difficulty < 4) {
+            if (difficulty < state.difficultyMap.length) {
                 difficulty++
             }
             return {
@@ -342,7 +354,38 @@ export default function rootReducer(state = initialState, action) {
                 difficulty: difficulty
             }
         }
+        case 'game/saveProgress': {
+            storeProgress(state)
+            return state
+        }
+        case 'game/retrieveProgress': {
+            if (action.payload !== null){
+                return action.payload
+            } else {
+                return state
+            }
+
+        }
+        case 'time/save':{
+            return {
+                ...state,
+                time: action.payload
+            }
+        }
+        case 'time/start':{
+            return {
+                ...state,
+                continueTime: true
+            }
+        }
+        case 'time/start':{
+            return {
+                ...state,
+                continueTime: false
+            }
+        }
         default:
             return state
     }
 }
+

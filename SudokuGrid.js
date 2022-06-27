@@ -1,7 +1,8 @@
-import React from 'react';
-import { Text, View, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, AppState } from 'react-native';
 import Cell from './Cell.js'
 import { useDispatch } from 'react-redux'
+import {retrieveProgress} from './progress'
 import puzzle from './puzzles/diff.json'
 
 const styles = StyleSheet.create({
@@ -21,8 +22,20 @@ const styles = StyleSheet.create({
 
 export default function SudokuGrid() {
     let dispatch = useDispatch()
-    dispatch({ type: 'cell/loadCell', payload: puzzle[0] })
-    
+    let firstTime = useRef(true)
+    useEffect(() => {
+        if(firstTime.current){
+            const fetchProgress = async () => {
+                console.log("hello")
+                let progress = await retrieveProgress()
+                // dispatch({ type: 'game/retrieveProgress', payload: progress })
+            }
+            fetchProgress()
+            firstTime.current = false
+        }
+
+    }, [])
+
     let grid = [React.createElement(View, { key: -1 })]
     for (let i = 0; i < 9; i++) {
         let smallGrid = []
@@ -36,13 +49,38 @@ export default function SudokuGrid() {
                 row.push(<Cell key={id} cellId={id} style={cellStyle} />)
             }
             smallGrid.push(
-                React.createElement(View, { style: [styles.row, styles.emptyStyle], key:j }, row)
+                React.createElement(View, { style: [styles.row, styles.emptyStyle], key: j }, row)
             )
         }
         grid.push(
             React.createElement(View, { style: { flexDirection: 'row' }, key: i }, smallGrid)
         )
     }
+
+    const appState = useRef(AppState.currentState);
+    const [appStateVisible, setAppStateVisible] = useState(appState.current);
+
+    useEffect(() => {
+        if(!firstTime.current){
+            const subscription = AppState.addEventListener("change", nextAppState => {
+                // if (appState.current.match(/inactive|background/) && nextAppState === "active") {
+                //     console.log("App has come to the foreground!");
+                // }
+                if (nextAppState === "background") {
+                    // console.log("App is going into background!");
+                    dispatch({ type: 'game/saveProgress' })
+                }
+                // console.log(nextAppState)
+                appState.current = nextAppState;
+                setAppStateVisible(appState.current);
+                console.log("AppState", appState.current);
+            });
+    
+            return () => {
+                subscription.remove();
+            };
+        }
+    }, []);
 
 
     return (
