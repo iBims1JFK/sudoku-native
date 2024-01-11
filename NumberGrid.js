@@ -11,6 +11,7 @@ const styles = StyleSheet.create({
 export default function NumberGrid() {
     let dispatch = useDispatch()
     let solved = useSelector(state => state.unsolved) === 0
+    let abort = useSelector(state => state.abort)
     let difficulty = useSelector(state => state.difficulty)
     let difficultyMap = useSelector(state => state.difficultyMap)
     // let difficultyMap = ['very easy', 'easy', 'medium', 'hard', 'extrem']
@@ -20,7 +21,7 @@ export default function NumberGrid() {
     }
     return (
         <View>
-            {solved ?
+            {solved || abort ?
                 <View style={{ alignItems: 'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                         <Pressable onPress={() => dispatch({type: 'difficulty/decrement'})}>

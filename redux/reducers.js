@@ -37,7 +37,7 @@ const initialState = {
     difficultyMap: ['very easy', 'easy', 'medium', 'hard', 'extrem'],
     time: 0,
     continueTime: false,
-
+    abort: false
 }
 
 export default function rootReducer(state = initialState, action) {
@@ -120,7 +120,9 @@ export default function rootReducer(state = initialState, action) {
                 ...state,
                 cells: cellCopy,
                 unsolved: unsolved,
-                continueTime: true
+                continueTime: true,
+                abort: false,
+                time: 0
             }
         }
         case 'cell/revealSolution': {
@@ -197,6 +199,9 @@ export default function rootReducer(state = initialState, action) {
         }
         case 'focus/focusChanged': {
             let cellCopy = [...state.cells]
+            if (state.abort || state.solved === 0) {
+                return state
+            }
             let undeletable
             if (state.focused.id !== -1) {
                 cellCopy[state.focused.id].focused = false
@@ -336,8 +341,10 @@ export default function rootReducer(state = initialState, action) {
         }
         case 'difficulty/increment': {
             let difficulty = state.difficulty
-            if (difficulty < state.difficultyMap.length) {
+            if (difficulty < state.difficultyMap.length - 1) {
                 difficulty++
+            } else {
+                difficulty = 0
             }
             return {
                 ...state,
@@ -348,6 +355,8 @@ export default function rootReducer(state = initialState, action) {
             let difficulty = state.difficulty
             if (difficulty > 0) {
                 difficulty--
+            } else {
+                difficulty = state.difficultyMap.length - 1
             }
             return {
                 ...state,
@@ -366,6 +375,14 @@ export default function rootReducer(state = initialState, action) {
             }
 
         }
+        case 'game/abort': {
+            return {
+                ...state,
+                abort: true,
+                continueTime: false,
+                time: 0
+            }
+        }
         case 'time/save':{
             return {
                 ...state,
@@ -378,12 +395,13 @@ export default function rootReducer(state = initialState, action) {
                 continueTime: true
             }
         }
-        case 'time/start':{
+        case 'time/end':{
             return {
                 ...state,
                 continueTime: false
             }
         }
+        
         default:
             return state
     }
